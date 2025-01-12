@@ -2,11 +2,15 @@ from position import Position, Move
 from typing import Optional
 
 WINNING_SCORE = 150000
+AT_LEAST_A_KING_UP_SCORE = 150000
 
 
 def negamax(
     position: Position, depth: int, alpha: int, beta: int
 ) -> tuple[int, Optional[Move]]:
+    if abs(position.score) > AT_LEAST_A_KING_UP_SCORE:
+        return position.score, None
+
     if depth <= 0:
         return position.score, None
 
