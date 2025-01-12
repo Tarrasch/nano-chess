@@ -1,6 +1,7 @@
 # Piece-square tables
 # Values are for white pieces. For black pieces, the table should be reversed.
 
+piece_values = {"P": 100, "N": 320, "B": 330, "R": 500, "Q": 900, "K": 200000}
 pawn_table = [
     0,  0,  0,  0,  0,  0,  0,  0,
     50, 50, 50, 50, 50, 50, 50, 50,
@@ -78,12 +79,18 @@ king_end_game_table = [
     -50,-30,-30,-30,-30,-30,-30,-50
 ]
 
-piece_square_tables = {
+piece_square_tables: dict[str, list[int]] = {
     'P': pawn_table,
     'N': knight_table,
     'B': bishop_table,
     'R': rook_table,
     'Q': queen_table,
     'K': king_middle_game_table,
-    'k': king_end_game_table
 }
+
+# Pad tables and join piece and pst dictionaries
+for piece_type, table in piece_square_tables.items():
+    def padrow(row: list[int]) -> list[int]:
+        return [0] + list(x + piece_values[piece_type] for x in row) + [0]
+    piece_square_tables[piece_type] = sum([padrow(table[i * 8 : i * 8 + 8]) for i in range(8)], [])
+    piece_square_tables[piece_type] = [0] * 20 + piece_square_tables[piece_type] + [0] * 20

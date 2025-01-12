@@ -2,6 +2,7 @@
 .autoenv.zsh
 
 submission.tar.gz
+unused/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
