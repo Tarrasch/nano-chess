@@ -39,7 +39,7 @@ def go_loop(position: Position, stop_event, max_movetime=0, max_depth=0, debug=F
 
         # We may not have a move yet at depth = 1  # Arash: Not sure if its true for this engine flavor.
         if search_result.depth > 1:
-            if elapsed > max_movetime * 2 / 3:
+            if elapsed > max_movetime * 0.05:
                 break
             if stop_event.is_set():
                 break
@@ -47,8 +47,20 @@ def go_loop(position: Position, stop_event, max_movetime=0, max_depth=0, debug=F
     print(f"bestmove {move.to_uci()}")
 
 
+debug = False
 
-debug = True
+
+def apply_uci_moves(position: Position, remaining_args) -> Position:
+    if remaining_args:
+        assert args[2] == "moves"
+        for move_in_uci in args[3:]:
+            move = Move.from_uci(move_in_uci)
+            if position.is_flipped_perspective:
+                move = move.rotate()
+            position = position.move(move)
+
+    return position
+
 
 with ThreadPoolExecutor(max_workers=1) as executor:
     # Noop future to get started
@@ -91,22 +103,11 @@ with ThreadPoolExecutor(max_workers=1) as executor:
 
             elif args[:2] == ["position", "startpos"]:
                 current_pos = Position.new_startpos()
-                assert args[2] == "moves"
-                for move_in_uci in args[3:]:
-                    move = Move.from_uci(move_in_uci)
-                    if current_pos.is_flipped_perspective:
-                        move = move.rotate()
-                    current_pos = current_pos.move(move)
+                current_pos = apply_uci_moves(current_pos, args[2:])
 
             elif args[:2] == ["position", "fen"]:
                 current_pos = Position.from_fen(*args[2:8])
-                if len(args) > 8:
-                    assert args[8] == "moves"
-                    for move_in_uci in args[9:]:
-                        move = Move.from_uci(move_in_uci)
-                        if current_pos.is_flipped_perspective:
-                            move = move.rotate()
-                        current_pos = current_pos.move(move)
+                current_pos = apply_uci_moves(current_pos, args[8:])
 
             elif args[0] == "go":
                 think = 10**6
