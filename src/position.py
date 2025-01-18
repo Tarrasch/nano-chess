@@ -71,10 +71,29 @@ class Move:
     j: int
     prom: str  # piece being promoted to
 
+    @staticmethod
+    def from_uci(move_in_uci: str):
+        """
+        Converts a UCI string to a Move object.
+
+        The output is not adjusted/rotated yet for the black player.
+        """
+
+        def parse(c):
+            fil, rank = ord(c[0]) - ord("a"), int(c[1]) - 1
+            return A1 + fil - 10 * rank
+
+        i, j, prom = (
+            parse(move_in_uci[:2]),
+            parse(move_in_uci[2:4]),
+            move_in_uci[4:].upper(),
+        )
+        return Move(i, j, prom)
+
     def to_uci(self):
         # Convert the 120-board index to file and rank
         def index_to_uci(index):
-            file = chr((index % 10) + ord('a') - 1)
+            file = chr((index % 10) + ord("a") - 1)
             rank = str(8 - (index // 10 - 2))
             return file + rank
 
@@ -84,9 +103,8 @@ class Move:
 
         return f"{from_square}{to_square}{promotion}"
 
-    def rotate(self) -> 'Move':
+    def rotate(self) -> "Move":
         return Move(119 - self.i, 119 - self.j, self.prom)
-
 
 
 @dataclasses.dataclass()
@@ -98,26 +116,33 @@ class Position:
     enpassant_square: Optional[int]
     # King passant is the square the king just "jumped over" immedietly after castling.
     king_passant_square: int
+    is_flipped_perspective: bool  # True when black is to move.
 
     @staticmethod
-    def from_fen(fen: str) -> 'Position':
+    def new_startpos() -> "Position":
+        return Position.from_fen(
+            fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        )
+
+    @staticmethod
+    def from_fen(fen: str) -> "Position":
         # MOSTLY AI GENERATED CODE.
         parts = fen.split()
 
-        board = ['.'] * 120
+        board = ["."] * 120
         # Fill spaces and newlines
         for i in range(120):
             if 21 <= i <= 98 and i % 10 != 0 and i % 10 != 9:
                 # We're inside the board
                 pass
             else:
-                board[i] = '\n' if i % 10 == 9 else ' '
+                board[i] = "\n" if i % 10 == 9 else " "
 
         # Parse board position
         fen_board = parts[0]
         row, col = 0, 0
         for char in fen_board:
-            if char == '/':
+            if char == "/":
                 row += 1
                 col = 0
             elif char.isdigit():
@@ -126,29 +151,38 @@ class Position:
                 board[21 + row * 10 + col] = char
                 col += 1
 
-        board = ''.join(board)
+        board = "".join(board)
 
         # Parse castling rights
-        white_castling = ('K' in parts[2], 'Q' in parts[2])
-        black_castling = ('k' in parts[2], 'q' in parts[2])
+        white_castling = ("K" in parts[2], "Q" in parts[2])
+        black_castling = ("k" in parts[2], "q" in parts[2])
 
         # Parse en passant square
         ep_square = None
-        if parts[3] != '-':
+        if parts[3] != "-":
             file, rank = parts[3]
-            ep_square = 21 + (8 - int(rank)) * 10 + (ord(file) - ord('a'))
+            ep_square = 21 + (8 - int(rank)) * 10 + (ord(file) - ord("a"))
 
-        score = sum(piece_square_tables.piece_square_tables[c][i] for i, c in enumerate(board) if c.isupper())
-        score -= sum(piece_square_tables.piece_square_tables[c.upper()][119-i] for i, c in enumerate(board) if c.islower())
+        score = sum(
+            piece_square_tables.piece_square_tables[c][i]
+            for i, c in enumerate(board)
+            if c.isupper()
+        )
+        score -= sum(
+            piece_square_tables.piece_square_tables[c.upper()][119 - i]
+            for i, c in enumerate(board)
+            if c.islower()
+        )
         position = Position(
             board=board,
             score=score,
             white_castling_rights=white_castling,
             black_castling_rights=black_castling,
             enpassant_square=ep_square,
-            king_passant_square=-100
+            king_passant_square=-100,
+            is_flipped_perspective=False,
         )
-        return position if parts[1] == 'w' else position.rotate()
+        return position if parts[1] == "w" else position.rotate()
 
     def gen_moves(self):
         # For each of our pieces, iterate through each possible 'ray' of moves,
@@ -219,11 +253,12 @@ class Position:
             119 - self.king_passant_square
             if self.king_passant_square and not nullmove
             else 0,
+            not self.is_flipped_perspective,
         )
 
-    def move(self, move):
+    def move(self, move: Move):
         i, j, prom = dataclasses.astuple(move)
-        p, q = self.board[i], self.board[j]
+        p = self.board[i]
 
         def put(board, i, p):
             return board[:i] + p + board[i + 1 :]
@@ -260,7 +295,15 @@ class Position:
             if j == self.enpassant_square:
                 board = put(board, j + S, ".")
         # We rotate the returned position, so it's ready for the next player
-        return Position(board, score, wc, bc, ep, kp).rotate()
+        return Position(
+            board,
+            score,
+            wc,
+            bc,
+            ep,
+            kp,
+            is_flipped_perspective=self.is_flipped_perspective,
+        ).rotate()
 
     def score_delta_by_move(self, move):
         i, j, prom = dataclasses.astuple(move)
@@ -279,7 +322,9 @@ class Position:
         # Castling (if we did it)
         if p == "K" and abs(i - j) == 2:
             score_delta += piece_square_tables.piece_square_tables["R"][(i + j) // 2]
-            score_delta -= piece_square_tables.piece_square_tables["R"][A1 if j < i else H1]
+            score_delta -= piece_square_tables.piece_square_tables["R"][
+                A1 if j < i else H1
+            ]
         # Special pawn stuff
         if p == "P":
             if A8 <= j <= H8:
@@ -288,5 +333,7 @@ class Position:
                     - piece_square_tables.piece_square_tables["P"][j]
                 )
             if j == self.enpassant_square:
-                score_delta += piece_square_tables.piece_square_tables["P"][119 - (j + S)]
+                score_delta += piece_square_tables.piece_square_tables["P"][
+                    119 - (j + S)
+                ]
         return score_delta

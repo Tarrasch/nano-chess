@@ -1,10 +1,11 @@
 import main
+import search
 from position import Position
 
 
 def search_best_move_helper(fen: str, depth: int) -> str:
     color = fen.split()[1]
-    return main.search_best_move(Position.from_fen(fen), depth=depth, color=color)
+    return search.search_with_depth(Position.from_fen(fen), depth=depth, color=color)
 
 
 class SimpleObs(object):
