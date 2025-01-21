@@ -28,8 +28,8 @@ def go_loop(position: Position, stop_event, max_movetime=0, max_depth=0, debug=F
         fields = {
             "depth": search_result.depth,
             "time": round(1000 * elapsed),
-            # "nodes": searcher.nodes,
-            # "nps": round(searcher.nodes / elapsed),
+            "nodes": search_result.nodes_visited,
+            "nps": round(search_result.nodes_visited / elapsed),
             "score cp": f"{search_result.score} lowerbound",
             "pv": move.to_uci(),
         }
