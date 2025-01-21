@@ -1,5 +1,5 @@
 from position import Position
-from search import search_with_depth
+from search import search_with_time_constraints
 
 
 def chess_bot(obs):
@@ -13,7 +13,9 @@ def chess_bot(obs):
         A string representing the chosen move in UCI notation (e.g., "e2e4")
     """
     position = Position.from_fen(obs.board)
-    color = obs.board.split()[1]
-    print(position.board)
-    # TODO Change to search_with_time_constraints.
-    return search_with_depth(position, depth=3, color=color)
+    search_result = search_with_time_constraints(position, suggested_time_for_move=0.1)
+    best_move = search_result.move
+    if position.is_flipped_perspective:
+        best_move = best_move.rotate()  # type: ignore
+
+    return best_move.to_uci()  # type: ignore

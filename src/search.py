@@ -20,15 +20,11 @@ class SearchResult:
 
 
 def search_with_time_constraints(
-    position: Position, remaining_time_in_seconds: float
+    position: Position, suggested_time_for_move: float
 ) -> SearchResult:
-    # TODO Change to better types than floats marked as "_in_seconds"!
     start = time.time()
-    think_time_in_seconds = min(
-        remaining_time_in_seconds / 40, remaining_time_in_seconds / 2 - 1
-    )
     for search_result in search_indefinetly(position=position):
-        if time.time() - start > think_time_in_seconds * 0.8:
+        if time.time() - start > suggested_time_for_move * 0.05:
             return search_result
 
 
