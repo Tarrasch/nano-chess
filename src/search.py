@@ -56,9 +56,9 @@ def search_with_depth(position: Position, depth: int, color: str) -> str:
 
 
 def negamax(position: Position, depth: int, alpha: int, beta: int) -> SearchResult:
-    king_is_captured = abs(position.score) > HAS_CERTAINLY_CAPTURED_KING_SCORE
+    king_is_captured = abs(position.evaluation) > HAS_CERTAINLY_CAPTURED_KING_SCORE
     if king_is_captured or depth <= 0:
-        return SearchResult.from_terminal_node(score=position.score)
+        return SearchResult.from_terminal_node(score=position.evaluation)
 
     final_search_result = SearchResult(
         depth=depth, score=-1000000, nodes_visited=0, move=None

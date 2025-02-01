@@ -184,6 +184,10 @@ class Position:
         )
         return position if parts[1] == "w" else position.rotate()
 
+    @property
+    def evaluation(self) -> int:
+        return self.score
+
     def gen_moves(self):
         # For each of our pieces, iterate through each possible 'ray' of moves,
         # as defined in the 'directions' map. The rays are broken e.g. by
@@ -306,7 +310,7 @@ class Position:
         ).rotate()
 
     def score_delta_by_move(self, move):
-        i, j, prom = dataclasses.astuple(move)
+        i, j, prom = move.i, move.j, move.prom
         p, q = self.board[i], self.board[j]
         # Actual move
         score_delta = (
