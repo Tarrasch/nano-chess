@@ -104,9 +104,9 @@ class Move:
 
 
 @dataclasses.dataclass()
-class Position:
+class AbstractPosition:
     board: str  # a 120 char representation of the boardwc
-    score: int
+    score: object  # int or neural network intermediate input
     white_castling_rights: tuple[bool, bool]
     black_castling_rights: tuple[bool, bool]
     enpassant_square: Optional[int]
@@ -116,25 +116,13 @@ class Position:
     king_is_captured: bool
 
     @classmethod
-    def get_score_from_board(cls, board: str) -> int:
-        score = sum(
-            piece_square_tables[c][i] for i, c in enumerate(board) if c.isupper()
-        )
-        score -= sum(
-            piece_square_tables[c.upper()][119 - i]
-            for i, c in enumerate(board)
-            if c.islower()
-        )
-        return score
-
-    @classmethod
-    def new_startpos(cls) -> "Position":
+    def new_startpos(cls) -> "AbstractPosition":
         return cls.from_fen(
             fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         )
 
     @classmethod
-    def from_fen(cls, fen: str) -> "Position":
+    def from_fen(cls, fen: str) -> "AbstractPosition":
         # MOSTLY AI GENERATED CODE.
         parts = fen.split()
 
@@ -172,7 +160,7 @@ class Position:
             file, rank = parts[3]
             ep_square = 21 + (8 - int(rank)) * 10 + (ord(file) - ord("a"))
 
-        position = Position(
+        position = cls(
             board=board,
             score=cls.get_score_from_board(board),
             white_castling_rights=white_castling,
@@ -246,7 +234,7 @@ class Position:
 
     def rotate(self, nullmove=False):
         """Rotates the board, preserving enpassant, unless nullmove"""
-        return Position(
+        return type(self)(
             self.board[::-1].swapcase(),
             -self.score,
             self.black_castling_rights,
@@ -301,7 +289,7 @@ class Position:
             if j == self.enpassant_square:
                 board = put(board, j + S, ".")
         # We rotate the returned position, so it's ready for the next player
-        return Position(
+        return type(self)(
             board,
             new_score,
             wc,
@@ -315,6 +303,20 @@ class Position:
     def check_captured_king(self, move: Move) -> bool:
         q = self.board[move.j]
         return q == "k" or abs(move.j - self.king_passant_square) < 2
+
+
+class ManualEvalPosition(AbstractPosition):
+    @classmethod
+    def get_score_from_board(cls, board: str) -> int:
+        score = sum(
+            piece_square_tables[c][i] for i, c in enumerate(board) if c.isupper()
+        )
+        score -= sum(
+            piece_square_tables[c.upper()][119 - i]
+            for i, c in enumerate(board)
+            if c.islower()
+        )
+        return score
 
     def get_new_score(self, move: Move) -> int:
         i, j, prom = move.i, move.j, move.prom
@@ -340,3 +342,5 @@ class Position:
             if j == self.enpassant_square:
                 score_delta += piece_square_tables["P"][119 - (j + S)]
         return self.score + score_delta
+
+Position = ManualEvalPosition
