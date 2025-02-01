@@ -113,6 +113,7 @@ class Position:
     # King passant is the square the king just "jumped over" immedietly after castling.
     king_passant_square: int
     is_flipped_perspective: bool  # True when black is to move.
+    king_is_captured: bool
 
     @staticmethod
     def new_startpos() -> "Position":
@@ -175,12 +176,9 @@ class Position:
             enpassant_square=ep_square,
             king_passant_square=-100,
             is_flipped_perspective=False,
+            king_is_captured=False,
         )
         return position if parts[1] == "w" else position.rotate()
-
-    @property
-    def king_is_captured(self) -> int:
-        return abs(self.score) > 150000
 
     @property
     def evaluation(self) -> int:
@@ -256,6 +254,7 @@ class Position:
             if self.king_passant_square and not nullmove
             else 0,
             not self.is_flipped_perspective,
+            self.king_is_captured,
         )
 
     def move(self, move: Move):
@@ -268,7 +267,8 @@ class Position:
         # Copy variables and reset ep and kp
         board = self.board
         wc, bc, ep, kp = self.white_castling_rights, self.black_castling_rights, 0, 0
-        score = self.score + self.score_delta_by_move(move)
+        king_is_captured = self.check_captured_king(move)
+        new_score = self.get_new_score(move)
         # Actual move
         board = put(board, j, board[i])
         board = put(board, i, ".")
@@ -299,15 +299,20 @@ class Position:
         # We rotate the returned position, so it's ready for the next player
         return Position(
             board,
-            score,
+            new_score,
             wc,
             bc,
             ep,
             kp,
             is_flipped_perspective=self.is_flipped_perspective,
+            king_is_captured=king_is_captured,
         ).rotate()
 
-    def score_delta_by_move(self, move):
+    def check_captured_king(self, move: Move) -> bool:
+        q = self.board[move.j]
+        return q == "k" or abs(move.j - self.king_passant_square) < 2
+
+    def get_new_score(self, move: Move) -> int:
         i, j, prom = move.i, move.j, move.prom
         p, q = self.board[i], self.board[j]
         # Actual move
@@ -330,4 +335,4 @@ class Position:
                 )
             if j == self.enpassant_square:
                 score_delta += piece_square_tables["P"][119 - (j + S)]
-        return score_delta
+        return self.score + score_delta
