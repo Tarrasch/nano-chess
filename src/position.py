@@ -1,7 +1,9 @@
 from manual_eval import piece_values, piece_square_tables
 from itertools import count
 import dataclasses
-from typing import Optional
+from typing import List, Optional
+import math
+import neural_network_eval
 
 # Code taken from Sunfish.
 
@@ -174,6 +176,8 @@ class AbstractPosition:
 
     @property
     def evaluation(self) -> int:
+        if self.king_is_captured:
+            return -200000
         return self.score
 
     def gen_moves(self):
@@ -343,4 +347,68 @@ class ManualEvalPosition(AbstractPosition):
                 score_delta += piece_square_tables["P"][119 - (j + S)]
         return self.score + score_delta
 
-Position = ManualEvalPosition
+
+def tanh(x):
+    return math.tanh(x)
+
+def forward_pass(
+    one_hot_encoded_board: List[int],
+    network_0_weights: List[List[float]],
+    network_2_weights: List[List[float]],
+    network_4_weights: List[List[float]],
+    network_6_weights: List[float],
+) -> float:
+    # Layer 0
+    layer_0_output = [sum(w * x for w, x in zip(weights, one_hot_encoded_board)) for weights in network_0_weights]
+    layer_1_output = [tanh(x) for x in layer_0_output]
+
+    # Layer 2
+    layer_2_output = [sum(w * x for w, x in zip(weights, layer_1_output)) for weights in network_2_weights]
+    layer_3_output = [tanh(x) for x in layer_2_output]
+
+    # Layer 4
+    layer_4_output = [sum(w * x for w, x in zip(weights, layer_3_output)) for weights in network_4_weights]
+    layer_5_output = [tanh(x) for x in layer_4_output]
+
+    # Layer 6
+    final_output = sum(w * x for w, x in zip(network_6_weights, layer_5_output))
+    return final_output
+
+
+class NeuralNetworkEvalPosition(AbstractPosition):
+    @staticmethod
+    def one_hot_encode_board(board: str) -> List[int]:
+        result = [0] * 768
+        for board_offset in range(64):
+            fil = board_offset % 8
+            rank = board_offset // 8
+            i = A1 + fil - 10 * rank
+            c = board[i]
+            piece_index = "PNBRQKpnbrqk".find(c)
+            if piece_index >= 0:
+                result[64 * piece_index + board_offset] = 1
+        return result
+
+    @classmethod
+    def get_score_from_board(cls, board: str) -> List[float]:
+        # Let's start without "efficiently updateable".
+        return 12345  # Dummy
+
+    def get_new_score(self, move: Move) -> int:
+        # Let's start without "efficiently updateable".
+        return 12345  # Dummy
+    
+    @property
+    def evaluation(self) -> float:
+        if self.king_is_captured:
+            return -200000
+        return forward_pass(
+            self.one_hot_encode_board(self.board),
+            neural_network_eval.network_0_weights,
+            neural_network_eval.network_2_weights,
+            neural_network_eval.network_4_weights,
+            neural_network_eval.network_6_weights,
+        )
+
+
+Position = NeuralNetworkEvalPosition

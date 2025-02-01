@@ -13,7 +13,8 @@ def chess_bot(obs):
         A string representing the chosen move in UCI notation (e.g., "e2e4")
     """
     position = Position.from_fen(obs.board)
-    search_result = search_with_time_constraints(position, suggested_time_for_move=0.1)
+    # TODO: Change back time to 0.1
+    search_result = search_with_time_constraints(position, suggested_time_for_move=10)
     best_move = search_result.move
     if position.is_flipped_perspective:
         best_move = best_move.rotate()  # type: ignore
