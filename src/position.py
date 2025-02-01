@@ -115,14 +115,26 @@ class Position:
     is_flipped_perspective: bool  # True when black is to move.
     king_is_captured: bool
 
-    @staticmethod
-    def new_startpos() -> "Position":
-        return Position.from_fen(
+    @classmethod
+    def get_score_from_board(cls, board: str) -> int:
+        score = sum(
+            piece_square_tables[c][i] for i, c in enumerate(board) if c.isupper()
+        )
+        score -= sum(
+            piece_square_tables[c.upper()][119 - i]
+            for i, c in enumerate(board)
+            if c.islower()
+        )
+        return score
+
+    @classmethod
+    def new_startpos(cls) -> "Position":
+        return cls.from_fen(
             fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         )
 
-    @staticmethod
-    def from_fen(fen: str) -> "Position":
+    @classmethod
+    def from_fen(cls, fen: str) -> "Position":
         # MOSTLY AI GENERATED CODE.
         parts = fen.split()
 
@@ -160,17 +172,9 @@ class Position:
             file, rank = parts[3]
             ep_square = 21 + (8 - int(rank)) * 10 + (ord(file) - ord("a"))
 
-        score = sum(
-            piece_square_tables[c][i] for i, c in enumerate(board) if c.isupper()
-        )
-        score -= sum(
-            piece_square_tables[c.upper()][119 - i]
-            for i, c in enumerate(board)
-            if c.islower()
-        )
         position = Position(
             board=board,
-            score=score,
+            score=cls.get_score_from_board(board),
             white_castling_rights=white_castling,
             black_castling_rights=black_castling,
             enpassant_square=ep_square,
