@@ -4,7 +4,6 @@ from position import Position, Move
 from typing import Iterable
 
 WINNING_SCORE = 150000
-HAS_CERTAINLY_CAPTURED_KING_SCORE = 150000
 
 
 @dataclasses.dataclass()
@@ -56,8 +55,7 @@ def search_with_depth(position: Position, depth: int, color: str) -> str:
 
 
 def negamax(position: Position, depth: int, alpha: int, beta: int) -> SearchResult:
-    king_is_captured = abs(position.evaluation) > HAS_CERTAINLY_CAPTURED_KING_SCORE
-    if king_is_captured or depth <= 0:
+    if position.king_is_captured or depth <= 0:
         return SearchResult.from_terminal_node(score=position.evaluation)
 
     final_search_result = SearchResult(

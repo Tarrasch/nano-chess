@@ -185,6 +185,10 @@ class Position:
         return position if parts[1] == "w" else position.rotate()
 
     @property
+    def king_is_captured(self) -> int:
+        return abs(self.score) > 150000
+
+    @property
     def evaluation(self) -> int:
         return self.score
 
