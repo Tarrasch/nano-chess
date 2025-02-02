@@ -1,11 +1,12 @@
 from position import NeuralNetworkEvalPosition as nn_pos_class
+from position import one_hot_encode_board
 
 
 def test_one_hot_encode_board():
     # https://lichess.org/editor/6K1/8/6k1/8/8/8/8/8_w_-_-_0_1?color=white
     pos = nn_pos_class.from_fen("6K1/8/6k1/8/8/8/8/8 w - - 0 1")
     answer = sum([[0] * 64 * 5, [0] * 62, [1, 0], [0] * 64 * 5, [0] * 46, [1], [0] * 17], start=[])
-    assert nn_pos_class.one_hot_encode_board(pos.board) == answer
+    assert one_hot_encode_board(pos.board) == answer
 
 
 def test_reasonable_score_starting_position():
