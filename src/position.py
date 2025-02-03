@@ -434,9 +434,9 @@ class InefficientNeuralNetworkEvalPosition(AbstractPosition):
         if self.king_is_captured:
             return -200000
         board = self.board if not self.is_flipped_perspective else self.rotate().board
-        return neural_network_eval.forward_pass(
+        return int(round(neural_network_eval.forward_pass(
             one_hot_encode_board(board),
-        ) * (-1 if self.is_flipped_perspective else 1)
+        ) * (-1 if self.is_flipped_perspective else 1)))
 
 
 class NeuralNetworkEvalPosition(AbstractPosition):
@@ -498,7 +498,7 @@ class NeuralNetworkEvalPosition(AbstractPosition):
     def evaluation(self) -> float:
         if self.king_is_captured:
             return -200000
-        return neural_network_eval.forward_pass_from_output_0(self.score) * (-1 if self.is_flipped_perspective else 1)
+        return int(round(neural_network_eval.forward_pass_from_output_0(self.score) * (-1 if self.is_flipped_perspective else 1)))
 
 
 Position = NeuralNetworkEvalPosition
