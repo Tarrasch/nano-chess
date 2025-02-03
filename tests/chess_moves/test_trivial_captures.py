@@ -7,11 +7,6 @@ def search_best_move_helper(fen: str, depth: int = 3) -> str:
     return search.search_with_depth(Position.from_fen(fen), depth=depth, color=color)
 
 
-class SimpleObs(object):
-    def __init__(self, fen):
-        self.board = fen
-
-
 def test_capture_queen():
     assert search_best_move_helper("6k1/8/6K1/8/8/3q4/8/3R4 w - - 0 1") == "d1d3"
     assert search_best_move_helper("6K1/8/6k1/8/8/3Q4/8/3r4 b - - 0 1") == "d1d3"
