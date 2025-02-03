@@ -44,3 +44,12 @@ def test_does_not_sacrifice_rook_multiple_depths():
         )
         != "b1b7"
     )
+
+
+def test_does_not_blunder_queen():
+    # https://lichess.org/UUYDLpDv/white#9 (first time I played agianst the "NNUE")
+    for depth in range(2, 5):
+        assert search_best_move_helper(
+            "r1b1kbnr/pppp1ppp/n7/4N3/1q1PP3/2P5/PP3PPP/RNBQKB1R b KQkq - 0 5",
+            depth=depth,
+        ) in ["b4a5", "b4b6", "b4d6", "b4e7"]

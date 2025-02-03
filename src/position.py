@@ -173,6 +173,62 @@ class AbstractPosition:
         )
         return position if parts[1] == "w" else position.rotate()
 
+    def to_fen(self) -> str:
+        # MOSTLY AI GENERATED CODE.
+        # Convert board to FEN string
+        def board_to_fen(board: str) -> str:
+            fen = ""
+            for rank in range(7,-1,-1):
+                empty_count = 0
+                for file in range(8):
+                    i = A1 + file - 10 * rank
+                    piece = board[i]
+                    if piece == ".":
+                        empty_count += 1
+                    else:
+                        if empty_count > 0:
+                            fen += str(empty_count)
+                            empty_count = 0
+                        fen += piece
+                if empty_count > 0:
+                    fen += str(empty_count)
+                if rank > 0:
+                    fen += "/"
+            return fen
+
+        # Determine active color
+        active_color = "w" if not self.is_flipped_perspective else "b"
+
+        # Castling rights
+        castling_rights = ""
+        if self.white_castling_rights[0]:
+            castling_rights += "K"
+        if self.white_castling_rights[1]:
+            castling_rights += "Q"
+        if self.black_castling_rights[0]:
+            castling_rights += "k"
+        if self.black_castling_rights[1]:
+            castling_rights += "q"
+        if not castling_rights:
+            castling_rights = "-"
+
+        # En passant square
+        if self.enpassant_square:
+            file = chr((self.enpassant_square % 10) + ord("a") - 1)
+            rank = str(8 - (self.enpassant_square // 10 - 2))
+            enpassant_square = file + rank
+        else:
+            enpassant_square = "-"
+
+        # Halfmove clock and fullmove number are not tracked in this implementation
+        halfmove_clock = "0"
+        fullmove_number = "1"
+
+        board = self.board
+        if self.is_flipped_perspective:
+            board = self.rotate().board
+        return f"{board_to_fen(board)} {active_color} {castling_rights} {enpassant_square} {halfmove_clock} {fullmove_number}"
+
     @property
     def evaluation(self) -> int:
         if self.king_is_captured:
@@ -377,30 +433,35 @@ class InefficientNeuralNetworkEvalPosition(AbstractPosition):
     def evaluation(self) -> float:
         if self.king_is_captured:
             return -200000
+        board = self.board if not self.is_flipped_perspective else self.rotate().board
         return neural_network_eval.forward_pass(
-            one_hot_encode_board(self.board),
-        )
+            one_hot_encode_board(board),
+        ) * (-1 if self.is_flipped_perspective else 1)
 
 
 class NeuralNetworkEvalPosition(AbstractPosition):
-    @staticmethod
-    def get_weight_for_pos_and_piece(i: int, piece: str) -> List[float]:
+    def get_weight_for_pos_and_piece(self, i: int, piece: str) -> List[float]:
+        print(f"i = {i}, piece = {piece}")
+        if self.is_flipped_perspective:
+            i = 119 - i
+            piece = piece.swapcase()
         file_64 = i % 10 - 1
         rank_64 = 9 - i // 10
         assert 0 <= file_64 <= 7, f"file_64 = {file_64}"
         assert 0 <= rank_64 <= 7, f"rank_64 = {rank_64}"
+        print(f"file_64 = {file_64}, rank_64 = {rank_64}")
         square_64 = 8 * rank_64 + file_64
         piece_index = "PNBRQKpnbrqk".index(piece)
         return neural_network_eval.network_0_weights_T[64 * piece_index + square_64]
 
     @classmethod
     def get_score_from_board(cls, board: str) -> List[float]:
-        return neural_network_eval.forward_pass_input_to_output_2(
+        return neural_network_eval.forward_pass_input_to_output_0(
             one_hot_encode_board(board),
-        )
+        ) 
 
     def get_negated_score(self):
-        return [-x for x in self.score]
+        return self.score  #[-x for x in self.score]
 
     def get_new_score(self, move: Move) -> int:
         i, j, prom = move.i, move.j, move.prom
@@ -439,7 +500,7 @@ class NeuralNetworkEvalPosition(AbstractPosition):
     def evaluation(self) -> float:
         if self.king_is_captured:
             return -200000
-        return neural_network_eval.forward_pass_from_output2(self.score)
+        return neural_network_eval.forward_pass_from_output_0(self.score) * (-1 if self.is_flipped_perspective else 1)
 
 
 Position = NeuralNetworkEvalPosition

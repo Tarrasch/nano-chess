@@ -22,7 +22,7 @@ network_6_weights: List[float] = model_weights_dict["network.6.weight"][
 ]  # A list of 16 floats
 
 
-def forward_pass_input_to_output_2(
+def forward_pass_input_to_output_0(
     one_hot_encoded_board: List[int],
 ) -> float:
     # Layer 0
@@ -30,14 +30,14 @@ def forward_pass_input_to_output_2(
         sum(w * x for w, x in zip(weights, one_hot_encoded_board))
         for weights in network_0_weights
     ]
-    layer_1_output = [math.tanh(x) for x in layer_0_output]
 
-    return layer_1_output
+    return layer_0_output
 
 
-def forward_pass_from_output2(
-    layer_1_output: List[int],
+def forward_pass_from_output_0(
+    layer_0_output: List[int],
 ) -> float:
+    layer_1_output = [math.tanh(x) for x in layer_0_output]
     # Layer 2
     layer_2_output = [
         sum(w * x for w, x in zip(weights, layer_1_output))
@@ -60,6 +60,6 @@ def forward_pass_from_output2(
 def forward_pass(
     one_hot_encoded_board: List[int],
 ) -> float:
-    return forward_pass_from_output2(
-        forward_pass_input_to_output_2(one_hot_encoded_board)
+    return forward_pass_from_output_0(
+        forward_pass_input_to_output_0(one_hot_encoded_board)
     )
