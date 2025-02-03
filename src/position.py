@@ -441,7 +441,6 @@ class InefficientNeuralNetworkEvalPosition(AbstractPosition):
 
 class NeuralNetworkEvalPosition(AbstractPosition):
     def get_weight_for_pos_and_piece(self, i: int, piece: str) -> List[float]:
-        print(f"i = {i}, piece = {piece}")
         if self.is_flipped_perspective:
             i = 119 - i
             piece = piece.swapcase()
@@ -449,7 +448,6 @@ class NeuralNetworkEvalPosition(AbstractPosition):
         rank_64 = 9 - i // 10
         assert 0 <= file_64 <= 7, f"file_64 = {file_64}"
         assert 0 <= rank_64 <= 7, f"rank_64 = {rank_64}"
-        print(f"file_64 = {file_64}, rank_64 = {rank_64}")
         square_64 = 8 * rank_64 + file_64
         piece_index = "PNBRQKpnbrqk".index(piece)
         return neural_network_eval.network_0_weights_T[64 * piece_index + square_64]
