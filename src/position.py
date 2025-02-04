@@ -1,4 +1,3 @@
-from manual_eval import piece_values, piece_square_tables
 from itertools import count
 import dataclasses
 from typing import List, Optional
@@ -47,14 +46,6 @@ directions = {
     "Q": (N, E, S, W, N + E, S + E, S + W, N + W),
     "K": (N, E, S, W, N + E, S + E, S + W, N + W),
 }
-
-# Mate value must be greater than 8*queen + 2*(rook+knight+bishop)
-# King value is set to twice this value such that if the opponent is
-# 8 queens up, but we got the king, we still exceed MATE_VALUE.
-# When a MATE is detected, we'll set the score to MATE_UPPER - plies to get there
-# E.g. Mate in 3 will be MATE_UPPER - 6
-MATE_LOWER = piece_values["K"] - 10 * piece_values["Q"]
-MATE_UPPER = piece_values["K"] + 10 * piece_values["Q"]
 
 
 ###############################################################################
@@ -178,7 +169,7 @@ class AbstractPosition:
         # Convert board to FEN string
         def board_to_fen(board: str) -> str:
             fen = ""
-            for rank in range(7,-1,-1):
+            for rank in range(7, -1, -1):
                 empty_count = 0
                 for file in range(8):
                     i = A1 + file - 10 * rank
@@ -367,45 +358,6 @@ class AbstractPosition:
         return q == "k" or abs(move.j - self.king_passant_square) < 2
 
 
-class ManualEvalPosition(AbstractPosition):
-    @classmethod
-    def get_score_from_board(cls, board: str) -> int:
-        score = sum(
-            piece_square_tables[c][i] for i, c in enumerate(board) if c.isupper()
-        )
-        score -= sum(
-            piece_square_tables[c.upper()][119 - i]
-            for i, c in enumerate(board)
-            if c.islower()
-        )
-        return score
-
-    def get_new_score(self, move: Move) -> int:
-        i, j, prom = move.i, move.j, move.prom
-        p, q = self.board[i], self.board[j]
-        # Actual move
-        score_delta = piece_square_tables[p][j] - piece_square_tables[p][i]
-        # Capture
-        if q.islower():
-            score_delta += piece_square_tables[q.upper()][119 - j]
-        # Opponent's illegal castling detection
-        if abs(j - self.king_passant_square) < 2:
-            score_delta += piece_square_tables["K"][119 - j]
-        # Castling (if we did it)
-        if p == "K" and abs(i - j) == 2:
-            score_delta += piece_square_tables["R"][(i + j) // 2]
-            score_delta -= piece_square_tables["R"][A1 if j < i else H1]
-        # Special pawn stuff
-        if p == "P":
-            if A8 <= j <= H8:
-                score_delta += (
-                    piece_square_tables[prom][j] - piece_square_tables["P"][j]
-                )
-            if j == self.enpassant_square:
-                score_delta += piece_square_tables["P"][119 - (j + S)]
-        return self.score + score_delta
-
-
 def one_hot_encode_board(board: str) -> List[int]:
     result = [0] * 768
     for board_offset in range(64):
@@ -434,9 +386,14 @@ class InefficientNeuralNetworkEvalPosition(AbstractPosition):
         if self.king_is_captured:
             return -200000
         board = self.board if not self.is_flipped_perspective else self.rotate().board
-        return int(round(neural_network_eval.forward_pass(
-            one_hot_encode_board(board),
-        ) * (-1 if self.is_flipped_perspective else 1)))
+        return int(
+            round(
+                neural_network_eval.forward_pass(
+                    one_hot_encode_board(board),
+                )
+                * (-1 if self.is_flipped_perspective else 1)
+            )
+        )
 
 
 class NeuralNetworkEvalPosition(AbstractPosition):
@@ -456,10 +413,10 @@ class NeuralNetworkEvalPosition(AbstractPosition):
     def get_score_from_board(cls, board: str) -> List[float]:
         return neural_network_eval.forward_pass_input_to_output_0(
             one_hot_encode_board(board),
-        ) 
+        )
 
     def get_negated_score(self):
-        return self.score  #[-x for x in self.score]
+        return self.score  # [-x for x in self.score]
 
     def get_new_score(self, move: Move) -> int:
         i, j, prom = move.i, move.j, move.prom
@@ -498,7 +455,12 @@ class NeuralNetworkEvalPosition(AbstractPosition):
     def evaluation(self) -> float:
         if self.king_is_captured:
             return -200000
-        return int(round(neural_network_eval.forward_pass_from_output_0(self.score) * (-1 if self.is_flipped_perspective else 1)))
+        return int(
+            round(
+                neural_network_eval.forward_pass_from_output_0(self.score)
+                * (-1 if self.is_flipped_perspective else 1)
+            )
+        )
 
 
 Position = NeuralNetworkEvalPosition
