@@ -14,5 +14,13 @@ optional:
 echo 'echo ENTERED; source .venv/bin/activate' > .autoenv.zsh
 
 submissions:
-tar -czf submission.tar.gz -C src .
+
+mkdir -p out/models/
+pyminify src/main.py --output out/main.py
+pyminify src/neural_network_eval.py --output out/neural_network_eval.py
+pyminify src/position.py --output out/position.py
+pyminify src/search.py --output out/search.py
+cp models/first_attempt.pickle out/models/first_attempt.pickle
+
+tar -czf submission.tar.gz -C out .
 ```

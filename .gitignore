@@ -4,6 +4,7 @@
 submission.tar.gz
 unused/
 .vscode/
+out/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
