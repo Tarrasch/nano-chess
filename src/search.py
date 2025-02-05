@@ -28,7 +28,7 @@ def search_with_time_constraints(
 
 
 def search_indefinetly(position: Position) -> Iterable[SearchResult]:
-    for depth in range(1, 1000):
+    for depth in range(2, 1000):
         yield negamax(position, depth, -WINNING_SCORE - 100, WINNING_SCORE + 100)
 
 
