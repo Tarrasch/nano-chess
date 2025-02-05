@@ -3,8 +3,7 @@ from position import Position
 
 
 def search_best_move_helper(fen: str, depth: int = 3) -> str:
-    color = fen.split()[1]
-    return search.search_with_depth(Position.from_fen(fen), depth=depth, color=color)
+    return search.search_with_depth(Position.from_fen(fen), depth=depth)
 
 
 # "rnbqkbnr/ppp3pp/8/3p1p2/3P4/8/PPPNQPPP/R1B1KBNR b KQkq - 1 5"

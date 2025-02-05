@@ -5,6 +5,7 @@ submission.tar.gz
 unused/
 .vscode/
 out/
+kaggle_submissions/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

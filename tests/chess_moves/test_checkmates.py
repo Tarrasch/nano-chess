@@ -3,8 +3,7 @@ from position import Position
 
 
 def search_best_move_helper(fen: str, depth: int = 3) -> str:
-    color = fen.split()[1]
-    return search.search_with_depth(Position.from_fen(fen), depth=depth, color=color)
+    return search.search_with_depth(Position.from_fen(fen), depth=depth)
 
 
 def test_mates_in_one_white_to_move():

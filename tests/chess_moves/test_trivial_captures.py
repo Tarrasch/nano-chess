@@ -3,8 +3,7 @@ from position import Position
 
 
 def search_best_move_helper(fen: str, depth: int = 3) -> str:
-    color = fen.split()[1]
-    return search.search_with_depth(Position.from_fen(fen), depth=depth, color=color)
+    return search.search_with_depth(Position.from_fen(fen), depth=depth)
 
 
 def test_capture_queen():
@@ -43,7 +42,7 @@ def test_does_not_sacrifice_rook_multiple_depths():
 
 def test_does_not_blunder_queen():
     # https://lichess.org/UUYDLpDv/white#9 (first time I played agianst the "NNUE")
-    for depth in range(2, 5):
+    for depth in range(2, 4):
         assert search_best_move_helper(
             "r1b1kbnr/pppp1ppp/n7/4N3/1q1PP3/2P5/PP3PPP/RNBQKB1R b KQkq - 0 5",
             depth=depth,

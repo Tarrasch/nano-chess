@@ -32,7 +32,7 @@ def search_indefinetly(position: Position) -> Iterable[SearchResult]:
         yield negamax(position, depth, -WINNING_SCORE - 100, WINNING_SCORE + 100)
 
 
-def search_with_depth(position: Position, depth: int, color: str) -> str:
+def search_with_depth(position: Position, depth: int) -> str:
     """
     Selects the best move from the given game state using negamax search.
 
