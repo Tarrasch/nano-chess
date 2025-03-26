@@ -1,65 +1,30 @@
 import pickle
-from typing import List, Dict
-import math
+import numpy as np
+from numpy.typing import NDArray
 
 FILE_PATH = "models/first_attempt.pickle"
 
 with open(FILE_PATH, "rb") as f:
-    model_weights_dict: Dict[str, List[List[float]]] = pickle.load(f)
+    model_weights_dict = pickle.load(f)
 
-network_0_weights: List[List[float]] = model_weights_dict[
-    "network.0.weight"
-]  # List of length 16, each element is a list of 768 floats
-network_0_weights_T: List[List[float]] = list(zip(*network_0_weights)) # List of length 768, each element is a list of 16 floats
-network_2_weights: List[List[float]] = model_weights_dict[
-    "network.2.weight"
-]  # List of length 16, each element is a list of 16 floats
-network_4_weights: List[List[float]] = model_weights_dict[
-    "network.4.weight"
-]  # List of length 16, each element is a list of 16 floats
-network_6_weights: List[float] = model_weights_dict["network.6.weight"][
-    0
-]  # A list of 16 floats
+# Convert weights to numpy arrays
+network_0_weights = np.array(model_weights_dict["network.0.weight"], dtype=np.float32)  # (16, 768)
+network_2_weights = np.array(model_weights_dict["network.2.weight"], dtype=np.float32)  # (16, 16)
+network_4_weights = np.array(model_weights_dict["network.4.weight"], dtype=np.float32)  # (16, 16)
+network_6_weights = np.array(model_weights_dict["network.6.weight"][0], dtype=np.float32)  # (16,)
 
+def forward_pass_input_to_output_0(one_hot_encoded_board: NDArray[np.float32]) -> NDArray[np.float32]:
+    return network_0_weights @ one_hot_encoded_board
 
-def forward_pass_input_to_output_0(
-    one_hot_encoded_board: List[int],
-) -> float:
-    # Layer 0
-    layer_0_output = [
-        sum(w * x for w, x in zip(weights, one_hot_encoded_board))
-        for weights in network_0_weights
-    ]
+def forward_pass_from_output_0(layer_0_output: np.ndarray) -> float:
+    layer_1_output = np.tanh(layer_0_output)
+    layer_2_output = network_2_weights @ layer_1_output
+    layer_3_output = np.tanh(layer_2_output)
+    layer_4_output = network_4_weights @ layer_3_output
+    layer_5_output = np.tanh(layer_4_output)
+    return float(network_6_weights @ layer_5_output)
 
-    return layer_0_output
-
-
-def forward_pass_from_output_0(
-    layer_0_output: List[int],
-) -> float:
-    layer_1_output = [math.tanh(x) for x in layer_0_output]
-    # Layer 2
-    layer_2_output = [
-        sum(w * x for w, x in zip(weights, layer_1_output))
-        for weights in network_2_weights
-    ]
-    layer_3_output = [math.tanh(x) for x in layer_2_output]
-
-    # Layer 4
-    layer_4_output = [
-        sum(w * x for w, x in zip(weights, layer_3_output))
-        for weights in network_4_weights
-    ]
-    layer_5_output = [math.tanh(x) for x in layer_4_output]
-
-    # Layer 6
-    final_output = sum(w * x for w, x in zip(network_6_weights, layer_5_output))
-    return final_output
-
-
-def forward_pass(
-    one_hot_encoded_board: List[int],
-) -> float:
+def forward_pass(one_hot_encoded_board: NDArray[np.float32]) -> float:
     return forward_pass_from_output_0(
         forward_pass_input_to_output_0(one_hot_encoded_board)
     )

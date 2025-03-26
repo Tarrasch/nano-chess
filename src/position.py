@@ -2,6 +2,8 @@ from itertools import count
 import dataclasses
 from typing import List, Optional
 import neural_network_eval
+import numpy as np
+from numpy.typing import NDArray
 
 # Code taken from Sunfish.
 
@@ -358,8 +360,8 @@ class AbstractPosition:
         return q == "k" or abs(move.j - self.king_passant_square) < 2
 
 
-def one_hot_encode_board(board: str) -> List[int]:
-    result = [0] * 768
+def one_hot_encode_board(board: str) -> NDArray[np.float32]:
+    result = np.zeros(768, dtype=np.float32)
     for board_offset in range(64):
         fil = board_offset % 8
         rank = board_offset // 8
@@ -397,7 +399,7 @@ class InefficientNeuralNetworkEvalPosition(AbstractPosition):
 
 
 class NeuralNetworkEvalPosition(AbstractPosition):
-    def get_weight_for_pos_and_piece(self, i: int, piece: str) -> List[float]:
+    def get_weight_for_pos_and_piece(self, i: int, piece: str) -> NDArray[np.float32]:
         if self.is_flipped_perspective:
             i = 119 - i
             piece = piece.swapcase()
@@ -407,7 +409,7 @@ class NeuralNetworkEvalPosition(AbstractPosition):
         assert 0 <= rank_64 <= 7, f"rank_64 = {rank_64}"
         square_64 = 8 * rank_64 + file_64
         piece_index = "PNBRQKpnbrqk".index(piece)
-        return neural_network_eval.network_0_weights_T[64 * piece_index + square_64]
+        return neural_network_eval.network_0_weights.T[64 * piece_index + square_64]
 
     @classmethod
     def get_score_from_board(cls, board: str) -> List[float]:
@@ -423,32 +425,25 @@ class NeuralNetworkEvalPosition(AbstractPosition):
         p, q = self.board[i], self.board[j]
         parts = [self.score]
         # Actual move
-        parts.append([-x for x in self.get_weight_for_pos_and_piece(i, p)])
+        parts.append(-self.get_weight_for_pos_and_piece(i, p))
         parts.append(self.get_weight_for_pos_and_piece(j, p))
         # Capture
         if q != ".":
             assert q.islower()
-            parts.append([-x for x in self.get_weight_for_pos_and_piece(j, q)])
+            parts.append(-self.get_weight_for_pos_and_piece(j, q))
         # Castling (if we did it)
         if p == "K" and abs(i - j) == 2:
             parts.append(self.get_weight_for_pos_and_piece((i + j) // 2, "R"))
-            parts.append(
-                [
-                    -x
-                    for x in self.get_weight_for_pos_and_piece(A1 if j < i else H1, "R")
-                ]
-            )
+            parts.append(-self.get_weight_for_pos_and_piece(A1 if j < i else H1, "R"))
         # Special pawn stuff
         if p == "P":
             if A8 <= j <= H8:
                 # handle promotions
                 parts.append(self.get_weight_for_pos_and_piece(j, prom))
                 # Remove the pawn there that we previously (erronously) added.
-                parts.append([-x for x in self.get_weight_for_pos_and_piece(j, "P")])
+                parts.append(-self.get_weight_for_pos_and_piece(j, "P"))
             if j == self.enpassant_square:
-                parts.append(
-                    [-x for x in self.get_weight_for_pos_and_piece((j + S), "p")]
-                )
+                parts.append(-self.get_weight_for_pos_and_piece((j + S), "p"))
         return [sum(xs) for xs in zip(*parts)]
 
     @property
