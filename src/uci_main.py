@@ -39,7 +39,7 @@ def go_loop(position: Position, stop_event, max_movetime=0, max_depth=0, debug=F
 
         # We may not have a move yet at depth = 1  # Arash: Not sure if its true for this engine flavor.
         if search_result.depth > 1:
-            if elapsed > max_movetime * 0.25:
+            if elapsed > max_movetime * 0.15:
                 break
             if stop_event.is_set():
                 break
@@ -130,16 +130,6 @@ with ThreadPoolExecutor(max_workers=1) as executor:
 
                 elif args[1] == "depth":
                     max_depth = int(args[2])
-
-                # Arash: Can I skip this in a minimal implementaiton?
-                # elif args[1] in ("mate", "draw"):
-                #     max_depth = int(args[2])
-                #     loop = partial(mate_loop, find_draw=args[1] == "draw")
-
-                # Arash: Can I skip this in a minimal implementaiton?
-                # elif args[1] == "perft":
-                #     perft(hist[-1], int(args[2]), debug=debug)
-                #     continue
 
                 do_stop_event.clear()
                 go_future = executor.submit(
