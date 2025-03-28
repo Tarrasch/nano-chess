@@ -39,7 +39,7 @@ def go_loop(position: Position, stop_event, max_movetime=0, max_depth=0, debug=F
 
         # We may not have a move yet at depth = 1  # Arash: Not sure if its true for this engine flavor.
         if search_result.depth > 1:
-            if elapsed > max_movetime * 0.05:
+            if elapsed > max_movetime * 0.25:
                 break
             if stop_event.is_set():
                 break
